@@ -3,14 +3,17 @@
 import pandas as pd
 
 
-def load_train_data(path):
+def load_train_data(path, small=False):
     train = pd.read_csv(path)
     
     train['Sex'][train['Sex'] == 'male'] = 0
     train['Sex'][train['Sex'] == 'female'] = 1
     train['Sex'] = train['Sex'].astype(int)
     
-    fill_train = train.iloc[:, [0,1,2,4,5,6,7,9]]
+    if small:
+        fill_train = train.iloc[:, [0,1,2,4,5,9]]
+    else:
+        fill_train = train.iloc[:, [0,1,2,4,5,6,7,9]]
     med = fill_train['Age'].median()
     fill_train.loc[:, 'Age'] = fill_train['Age'].fillna(med)
     
@@ -22,14 +25,17 @@ def load_train_data(path):
     return ids, data, labels, med
 
 
-def load_test_data(path, med):
+def load_test_data(path, med, small=False):
     test = pd.read_csv(path)
     
     test['Sex'][test['Sex'] == 'male'] = 0
     test['Sex'][test['Sex'] == 'female'] = 1
     test['Sex'] = test['Sex'].astype(int)
     
-    fill = test.iloc[:, [0,1,3,4,5,6,8]]
+    if small:
+        fill = test.iloc[:, [0,1,3,4,8]]
+    else:
+        fill = test.iloc[:, [0,1,3,4,5,6,8]]
     fill.loc[:, 'Age'] = fill['Age'].fillna(med)
     
     fill = fill.values

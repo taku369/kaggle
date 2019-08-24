@@ -1,1 +1,5 @@
-python src/train.py base
+python src/train.py \
+  base \
+  --normalize
+
+

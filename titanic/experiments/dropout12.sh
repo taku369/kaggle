@@ -1,8 +1,9 @@
 python src/train.py \
-  dropout \
+  dropout12 \
   --normalize \
   --dropout \
-  --max_epoch 500
+  --max_epoch 500 \
+  --hidden_ch 12
 
 
 

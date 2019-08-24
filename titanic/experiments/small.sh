@@ -1,8 +1,11 @@
 python src/train.py \
-  dropout \
+  small \
   --normalize \
   --dropout \
-  --max_epoch 500
+  --small \
+  --hidden_ch 4 \
+  --dropout
+
 
 
 

@@ -13,20 +13,22 @@ from utils import load_train_data, scheduler
 def parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('name')
-    parser.add_argument('--hidden_ch', default=16, type=int)
+    parser.add_argument('--hidden_ch', default=6, type=int)
     parser.add_argument('--dropout', default=False, action='store_true')
     parser.add_argument('--lr', default=0.001, type=float)
     parser.add_argument('--gamma', default=0.9, type=float)
-    parser.add_argument('--max_epoch', default=50, type=int)
+    parser.add_argument('--max_epoch', default=300, type=int)
     parser.add_argument('--normalize', default=False, action='store_true')
     parser.add_argument('--alldata', default=False, action='store_true')
+    parser.add_argument('--small', default=False, action='store_true')
+    parser.add_argument('--fix_lr', default=False, action='store_true')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse()
 
-    train_ids, train_data, train_labels, med = load_train_data('data/train.csv')
+    train_ids, train_data, train_labels, med = load_train_data('data/train.csv', small=args.small)
     print(train_data.shape)
 
     if args.normalize:
@@ -48,16 +50,30 @@ if __name__ == '__main__':
     ckpt_path = './ckpt/%s/ckpt' % args.name
     logdir="./logs/titanic-%s-%s" % (args.name, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     if args.alldata: 
-        callbacks = [tf.keras.callbacks.ModelCheckpoint(ckpt_path),
-                     tf.keras.callbacks.LearningRateScheduler(scheduler(args.max_epoch // 2, args.lr, args.gamma)),
-                    ]
+        callbacks = [tf.keras.callbacks.ModelCheckpoint(ckpt_path)]
+        if not args.fix_lr:
+            callbacks.append(tf.keras.callbacks.LearningRateScheduler(scheduler(int(args.max_epoch * 0.9), args.lr, args.gamma)))
         model.fit(train_data, train_labels, 
                   batch_size=4, epochs=args.max_epoch, callbacks=callbacks)
     else:
-        callbacks = [tf.keras.callbacks.ModelCheckpoint(ckpt_path, save_best_only=True, monitor='val_acc'),
-                     tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1),
-                     tf.keras.callbacks.LearningRateScheduler(scheduler(args.max_epoch // 2, args.lr, args.gamma)),
-                    ]
+        callbacks = [tf.keras.callbacks.ModelCheckpoint(ckpt_path, save_best_only=True, monitor='val_loss'),
+                     tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1)]
+        if not args.fix_lr:
+            callbacks.append(tf.keras.callbacks.LearningRateScheduler(scheduler(int(args.max_epoch * 0.9), args.lr, args.gamma)))
         model.fit(train_data, train_labels, 
                   batch_size=4, epochs=args.max_epoch, callbacks=callbacks,
                   validation_data=(val_data, val_labels))
+
+    model.load_weights(ckpt_path)
+    cnt = 0
+    loss_sum = 0
+    for IDX in range(100):
+        predict = model.predict(val_data[IDX:IDX + 1])[0][0]
+        if predict > 0.5:
+            pred_label = 1
+        else:
+            pred_label = 0
+        # print(pred_label, val_labels[IDX], pred_label == val_labels[IDX])
+        if pred_label == val_labels[IDX]:
+            cnt += 1
+    print('val_acc %d / 100' % cnt)
