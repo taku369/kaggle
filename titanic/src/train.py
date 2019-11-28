@@ -7,73 +7,73 @@ import pandas as pd
 import tensorflow as tf
 
 from model import TitanicModel
-from utils import load_train_data, scheduler
+from dataset import load_train_data, load_test_data
 
 
 def parse():
     parser = argparse.ArgumentParser()
-    parser.add_argument('name')
-    parser.add_argument('--hidden_ch', default=6, type=int)
-    parser.add_argument('--dropout', default=False, action='store_true')
+    parser.add_argument('--hidden_ch', default=8, type=int)
     parser.add_argument('--lr', default=0.001, type=float)
     parser.add_argument('--gamma', default=0.9, type=float)
-    parser.add_argument('--max_epoch', default=300, type=int)
-    parser.add_argument('--normalize', default=False, action='store_true')
-    parser.add_argument('--alldata', default=False, action='store_true')
-    parser.add_argument('--small', default=False, action='store_true')
-    parser.add_argument('--fix_lr', default=False, action='store_true')
+    parser.add_argument('--max_epoch', default=50, type=int)
+    parser.add_argument('--val_num', default=100, type=int)
     return parser.parse_args()
+
+
+def predict_labels(probs):
+    labels = []
+    for prob in probs:
+        if prob > 0.5:
+            labels.append(1)
+        else:
+            labels.append(0)
+    return labels
 
 
 if __name__ == '__main__':
     args = parse()
 
-    train_ids, train_data, train_labels, med = load_train_data('data/train.csv', small=args.small)
-    print(train_data.shape)
+    # データ読み込み
+    train_ids, train_data, train_labels, med, mean, std = load_train_data('data/train.csv')
 
-    if args.normalize:
-        train_mean = np.mean(train_data, axis=0)
-        train_std = np.std(train_data, axis=0)
-        train_data = (train_data - train_mean) / train_std
+    # バリデーションデータの用意
+    val_data = train_data[:args.val_num]
+    val_labels = train_labels[:args.val_num]
+    train_data = train_data[args.val_num:]
+    train_labels = train_labels[args.val_num:]
 
-    if not args.alldata:
-        val_data = train_data[-100:]
-        val_labels = train_labels[-100:]
-        train_data = train_data[:-100]
-        train_labels = train_labels[:-100]
-
-    model = TitanicModel(hidden_ch=args.hidden_ch, is_dropout=args.dropout)
+    # モデル設定
+    model = TitanicModel(hidden_ch=args.hidden_ch)
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=args.lr),
                   loss=tf.losses.log_loss,
                   metrics=['accuracy'])
     
-    ckpt_path = './ckpt/%s/ckpt' % args.name
-    logdir="./logs/titanic-%s-%s" % (args.name, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-    if args.alldata: 
-        callbacks = [tf.keras.callbacks.ModelCheckpoint(ckpt_path)]
-        if not args.fix_lr:
-            callbacks.append(tf.keras.callbacks.LearningRateScheduler(scheduler(int(args.max_epoch * 0.9), args.lr, args.gamma)))
-        model.fit(train_data, train_labels, 
-                  batch_size=4, epochs=args.max_epoch, callbacks=callbacks)
-    else:
-        callbacks = [tf.keras.callbacks.ModelCheckpoint(ckpt_path, save_best_only=True, monitor='val_loss'),
-                     tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1)]
-        if not args.fix_lr:
-            callbacks.append(tf.keras.callbacks.LearningRateScheduler(scheduler(int(args.max_epoch * 0.9), args.lr, args.gamma)))
-        model.fit(train_data, train_labels, 
-                  batch_size=4, epochs=args.max_epoch, callbacks=callbacks,
-                  validation_data=(val_data, val_labels))
+    # 学習
+    ckpt_path = './ckpt/titanic'
+    callbacks = [tf.keras.callbacks.ModelCheckpoint(ckpt_path, save_best_only=True, monitor='val_loss')]
+    model.fit(train_data, train_labels, 
+              batch_size=4, epochs=args.max_epoch, callbacks=callbacks,
+              validation_data=(val_data, val_labels))
 
+    # バリデーションデータ評価
     model.load_weights(ckpt_path)
-    cnt = 0
-    loss_sum = 0
-    for IDX in range(100):
-        predict = model.predict(val_data[IDX:IDX + 1])[0][0]
-        if predict > 0.5:
-            pred_label = 1
-        else:
-            pred_label = 0
-        # print(pred_label, val_labels[IDX], pred_label == val_labels[IDX])
-        if pred_label == val_labels[IDX]:
-            cnt += 1
-    print('val_acc %d / 100' % cnt)
+    val_probs = model.predict(val_data)
+    val_preds = predict_labels(val_probs)
+    true_cnt = 0
+    for val_label, val_pred in zip(val_labels, val_preds):
+        if val_label == val_pred:
+            true_cnt += 1
+    print('val_acc %.2f' % (true_cnt / args.val_num))
+
+    # テストデータ予測
+    test_ids, test_data = load_test_data('data/test.csv', med, mean, std)
+    test_probs = model.predict(test_data)
+    test_preds = predict_labels(test_probs)
+    
+    result = []
+    for id_, pred in zip(test_ids, test_preds):
+        result.append('%d,%d' % (id_, pred))
+        
+    with open('result.csv', 'w') as fout:
+        fout.write('PassengerId,Survived\n')
+        fout.write('\n'.join(result))
