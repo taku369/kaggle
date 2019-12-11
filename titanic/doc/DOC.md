@@ -80,7 +80,7 @@ Kaggleの練習課題「Titanic: Machine Learning from Disaster」を利用す�
 具体例として前ででてきた概念に当てはめるだけで解法など詳しい解説は省略。
 
 #### モデル
-<img src=https://latex.codecogs.com/gif.latex?f(X|\theta=(A,B))=AX&plus;B>
+<img src="https://latex.codecogs.com/gif.latex?f(X|\theta=(A,B))=AX&plus;B">
 
 入力Xは(データ数)×(属性数)の行列。
 A、Bはパラメータ。
@@ -88,14 +88,14 @@ A、Bはパラメータ。
 #### 最適化
 学習データをX’、その教師信号をY’とすると誤差Eは以下のようになる。
 
-<img src=https://latex.codecogs.com/gif.latex?E={Y}'-A{X}'&plus;B>
+<img src="https://latex.codecogs.com/gif.latex?E={Y}'-A{X}'&plus;B">
 
 ここでX’・Y’は定数、A・Bは変数になっており、このEを最小にするためのA・Bを求める。
 線形回帰の場合は最小二乗法で求めることができる。
 + E2にたいしてA、Bでそれぞれ偏微分（∂E2/∂A、∂E2/∂B）
 + ∂E2/∂A=0、∂E2/∂B=0とおき、連立方程式を解く
 + A=Cov(X’, Y’) / Std(X’)2、B=Mean(Y’) - A・Mean(X’)が得られる
- + Covは共分散、Stdは標準偏差、Meanは平均
+  + Covは共分散、Stdは標準偏差、Meanは平均
 
 これでパラメータA、Bを学習データX’、Y’から得られたことになり、モデルが完成する。
 
@@ -117,12 +117,12 @@ A、Bはパラメータ。
 これも矢印がパラメータになっており一つの関数を表す。
 例えば、ユニットh<sub>1</sub>の入力は以下の式を表している。
 
-<img src=https://latex.codecogs.com/gif.latex?w^1_{11}x_1&plus;w^1_{12}x_2>
+<img src="https://latex.codecogs.com/gif.latex?w^1_{11}x_1&plus;w^1_{12}x_2">
 
 さらにユニットh<sub>1</sub>の出力時には活性化関数φが適用される。
 すなわち、
 
-<img src=https://latex.codecogs.com/gif.latex?h_1=\phi(w^1_{11}x_1&plus;w^1_{12}x_2)>
+<img src="https://latex.codecogs.com/gif.latex?h_1=\phi(w^1_{11}x_1&plus;w^1_{12}x_2)">
 
 この活性化関数には様々な非線形関数が使われる。
 よく使われるのはシグモイド関数やReLU関数など。
@@ -145,7 +145,7 @@ A、Bはパラメータ。
 Lは損失関数を表し、最小化する目的の関数（例えば二乗誤差ならL=E<sup>2</sup>など）。
 εは学習率を表し、一回の更新でパラメータをどの程度変えるかを調整する。
 
-<img src=https://latex.codecogs.com/gif.latex?\theta\leftarrow\theta-\epsilon\partial{L}/\partial\theta>
+<img src="https://latex.codecogs.com/gif.latex?\theta\leftarrow\theta-\epsilon\partial{L}/\partial\theta">
 
 ニューラルネットの複雑なモデルの勾配∂L/∂θを求める手法として誤差逆伝播法を使う。
 **このパラメータ更新を大量の学習データで繰り返し行うことによって、ニューラルネットワークの複雑なモデルを学習する。
@@ -162,9 +162,9 @@ check_data.ipynbを参照。
 ### データのダウンロード
 https://www.kaggle.com/c/titanic/data からtrain.csv・test.csvをダウンロードする。
 + train.csv
- + 学習データ。タイタニックの乗客の属性と**教師信号**（生き残ったかどうか）が書いている。
+  + 学習データ。タイタニックの乗客の属性と**教師信号**（生き残ったかどうか）が書いている。
 + test.csv
- + テストデータ。乗客の属性のみが書いてあり、モデルを作ってこれらの乗客が生き残ったかどうかを予測する。
+  + テストデータ。乗客の属性のみが書いてあり、モデルを作ってこれらの乗客が生き残ったかどうかを予測する。
 
 kaggleのページに詳しく書いているが、データの属性は以下の通り。
 + survival: 1=生存 0=死亡
@@ -281,11 +281,11 @@ src/train.py他参照。
 
 #### 学習回数
 + バッチサイズ
- + 1回のパラメータ更新で用いるデータ数
+  + 1回のパラメータ更新で用いるデータ数
 + イテレーション
- + 1回のパラメータ更新
+  + 1回のパラメータ更新
 + エポック
- + 学習データ全てを1回ずつ使ってパラメータ更新
+  + 学習データ全てを1回ずつ使ってパラメータ更新
 
 例えばデータ数100・バッチサイズ4のとき、25イテレーションが1エポックになる。
 
